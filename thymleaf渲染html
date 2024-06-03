@@ -1,0 +1,174 @@
+thymleaf渲染html
+参考地址：https://blog.csdn.net/csdnerM/article/details/119926196?ops_request_misc=&request_id=&biz_id=102&utm_term=thymeleaf%20%E8%AF%BB%E5%8F%96%E6%B8%B2%E6%9F%93%E5%90%8E%E7%9A%84html&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-1-119926196.142^v39^new_blog_pos_by_title,185^v2^control&spm=1018.2226.3001.4187
+
+适用场景：后端发送邮件，需要用html动态拼接参数
+
+总体逻辑：准备HTML模板（需要稍微了解thymleaf语法），读取模板，动态赋值
+
+一、引入依赖
+        <dependency>
+            <groupId>org.thymeleaf</groupId>
+            <artifactId>thymeleaf</artifactId>
+            <version>3.0.15.RELEASE</version>
+        </dependency>
+
+二、准备html模板：
+html前面加上定义可识别语法
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+需要使用thymleaf语法对HTML模板的动态参数进行修改
+例如:
+<div>
+    <div>
+        <div class="table-title">
+            <p class="involving">
+                <span th:text=${productLineId}></span>领域存在<span th:text=${exSpartCount}></span>个异常编码, 请及时处理
+            </p>
+        </div>
+        <a th:href="@{${jumpUrl}}" >点击可进入网站查看</a>
+    </div>
+</div>
+
+
+三、读取模板
+    /**
+     * 读取文件内容
+     *
+     * @param filePath 文件相对路径
+     * @return 内容
+     */
+    public static String readerFileContent(String filePath) {
+        StringBuilder content = new StringBuilder();
+        try {
+            Resource resource = new ClassPathResource(filePath);
+            @Cleanup
+            BufferedReader br =
+                    new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
+            while (br.ready()) {
+                content.append(br.readLine());
+            }
+            br.close();
+        } catch (IOException ex) {
+            LOGGER.error("readerFileContent fail", ex);
+        }
+        return content.toString();
+    }
+
+
+四、动态赋值
+
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
+    /**
+     * 使用 Thymeleaf 渲染 HTML
+     * @param template  HTML模板
+     * @param params 参数
+     * @return  渲染后的HTML
+     */
+    public static String render(String template, Map<String, Object> params){
+        Context context = new Context();
+        context.setVariables(params);
+        return templateEngine.process(template, context);
+    }
+
+附上工具类调用示例：
+
+        Map<String, Object> tempParams = new HashMap<>();
+        tempParams.put("productLineId", spartException.getProductLineId());
+        tempParams.put("exSpartCount", spartException.getExCount());
+	
+	// 也支持传入对象，例如
+	tempParams.put("spartException", spartException);
+
+        tempParams.put("jumpUrl", jumpUrl);
+        String html = HTMLTemplateUtils.render(content, tempParams);
+
+语法：
+html有的属性，Thymeleaf基本都有，而常用的属性大概有七八个。其中th属性执行的优先级从1~8，数字越低优先级越高。
+	1. th:text ：设置当前元素的文本内容，相同功能的还有th:utext，两者的区别在于前者不会转义html标签，后者会。优先级不高：order=7
+	2. th:value：设置当前元素的value值，类似修改指定属性的还有th:src，th:href。优先级不高：order=6
+	3. th:each：遍历循环元素，和th:text或th:value一起使用。注意该属性修饰的标签位置，详细往后看。优先级很高：order=2
+	4. th:if：条件判断，类似的还有th:unless，th:switch，th:case。优先级较高：order=3
+	5. th:insert：代码块引入，类似的还有th:replace，th:include，三者的区别较大，若使用不恰当会破坏html结构，常用于公共代码块提取的场景。优先级最高：order=1
+	6. th:fragment：定义代码块，方便被th:insert引用。优先级最低：order=8
+	7. th:object：声明变量，一般和*{}一起配合使用，达到偷懒的效果。优先级一般：order=4
+	8. th:attr：修改任意属性，实际开发中用的较少，因为有丰富的其他th属性帮忙，类似的还有th:attrappend，th:attrprepend。优先级一般：order=5
+	9. th:href="@{${regionUrl}}"
+	
+
+if里的判断表达式：
+
+gt：great than（大于）>
+ge：great equal（大于等于）>=
+eq：equal（等于）==
+lt：less than（小于）<
+le：less equal（小于等于）<=
+ne：not equal（不等于）!=
+
+
+工具类：
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2012-2020. All rights reserved.
+ */
+
+package com.huawei.ugtmemailservice.util;
+
+import lombok.Cleanup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+/**
+ * @author wWX1081927
+ */
+public class HTMLTemplateUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HTMLTemplateUtils.class);
+
+    private static final TemplateEngine TEMPLATE_ENGINE = new TemplateEngine();
+
+    /**
+     * 使用 Thymeleaf 渲染 HTML
+     *
+     * @param template  HTML模板
+     * @param params 参数
+     * @return  渲染后的HTML
+     */
+    public static String render(String template, Map<String, Object> params) {
+        Context context = new Context();
+        context.setVariables(params);
+        return TEMPLATE_ENGINE.process(template, context);
+    }
+
+    /**
+     * 读取文件内容
+     *
+     * @param filePath 文件路径
+     * @return 内容
+     */
+    public static String readerFileContent(String filePath) {
+        StringBuilder content = new StringBuilder();
+        try {
+            Resource resource = new ClassPathResource(filePath);
+            @Cleanup
+            BufferedReader br =
+                    new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8));
+            while (br.ready()) {
+                content.append(br.readLine());
+            }
+            br.close();
+        } catch (IOException ex) {
+            LOGGER.error("readerFileContent fail", ex);
+        }
+        return content.toString();
+    }
+}
