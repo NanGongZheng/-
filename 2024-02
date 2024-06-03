@@ -21,3 +21,10 @@ https://github.com/weiyinfu/MaoZeDongAnthology/blob/master/src/000-%E4%B8%AD%E5%
 读研分享
 https://github.com/crisxuan/bestJavaer/blob/bbd6701e9084e3e0f0f131901ca44f0dfb1d6690/reader/interview-kaoyan.md
 
+
+finally语句：
+	1.不一定被执行：①在try之前异常报错；②在try之前return；③System.exit(0)退出虚拟机 ④ 极端场景四级或者断电
+	2.会把try或catch中的返回值保留，再执行finally，等执行完再返回
+	3.try里面的 return num() 方法 等同于 int i = num(); return i; 所以num方法会先执行
+参考文档:https://blog.csdn.net/qq_39135287/article/details/78455525
+
