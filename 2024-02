@@ -28,3 +28,5 @@ finally语句：
 	3.try里面的 return num() 方法 等同于 int i = num(); return i; 所以num方法会先执行
 参考文档:https://blog.csdn.net/qq_39135287/article/details/78455525
 
+sql执行顺序
+from--where--group by--having--select--order by, 
