@@ -30,3 +30,5 @@ finally语句：
 
 sql执行顺序
 from--where--group by--having--select--order by, 
+
+pgsql，like和ilke索引：gist和gin
